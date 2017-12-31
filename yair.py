@@ -24,6 +24,10 @@ sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 100)
 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 100)
 
 image_score_fail_on=config['fail_on']['score']
+image_score_warning_on = image_score_fail_on
+if 'warning_on' in config:
+    image_score_warning_on = config['warning_on'].get('score')
+    
 big_vuln_fail_on=bool(config['fail_on']['big_vulnerability'])
 docker_registry="registry.hub.docker.com"
 output=config['output']['format']
@@ -245,30 +249,28 @@ def output_data():
         print >> sys.stdout, json.dumps(vuln_data)
 
     elif output == "quiet":
-        if big_vuln and big_vuln_fail_on:
-            exit(2)
-        elif image_score < image_score_fail_on:
-            exit(0)
-        else:
-            exit(2)
-
-
+        pass
+    
     print >> sys.stderr, "scan result for: " + str(image_name) + ":" + str(image_tag)
     
-    with open('score.txt', 'w') as score_file:
-        score_file.write(str(image_score))
-        
     if big_vuln and big_vuln_fail_on:
         send_to_rocket("The security scan for \"" + str(image_name) + ":" + str(image_tag) + "\" has found an vulnerability with severity high or higher!", ":information_source:")
         print >> sys.stderr, "the image has \"high\" vulnerabilities"
-        exit(2)
     elif image_score < image_score_fail_on:
-        exit(0)
+        pass
     else:
         send_to_rocket("The security scan for \"" + str(image_name) + ":" + str(image_tag) + "\" has found an vulnerability score of " + str(image_score) + "!", ":information_source:")
         print >> sys.stderr, "the image has to many fixable vulnerabilities"
-        exit(2)
 
+    exit_code = 0
+    if big_vuln and big_vuln_fail_on:
+        exit_code = 2
+    elif image_score >= image_score_warning_on:
+        exit_code = 3
+    elif image_score >= image_score_fail_on:
+        exit_code = 2
+        
+    exit(exit_code)
 
 if __name__ == '__main__':
     layers = get_image_layers()
