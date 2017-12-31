@@ -254,6 +254,10 @@ def output_data():
 
 
     print >> sys.stderr, "scan result for: " + str(image_name) + ":" + str(image_tag)
+    
+    with open('score.txt', 'w') as score_file:
+        score_file.write(str(image_score))
+        
     if big_vuln and big_vuln_fail_on:
         send_to_rocket("The security scan for \"" + str(image_name) + ":" + str(image_tag) + "\" has found an vulnerability with severity high or higher!", ":information_source:")
         print >> sys.stderr, "the image has \"high\" vulnerabilities"
